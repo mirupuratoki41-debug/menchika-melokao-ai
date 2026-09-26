@@ -1,909 +1,448 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>メン地下めろ顔AI診断 | あなたの“好き”をAIが分析♡</title>
-  
-  <!-- OGP / Meta Tags for SNS -->
-  <meta name="description" content="直感で2枚の写真から好きな顔を選ぶだけ♡ AIがあなたの潜在的なタイプを分析して「推し顔TOP9」を割り出します！">
-  <meta property="og:title" content="メン地下めろ顔AI診断 | あなたの“好き”をAIが分析♡">
-  <meta property="og:description" content="直感で選ぶだけ！AIがあなたのめろ顔タイプを本格分析。結果を保存してシェアしてね✨">
-  <meta property="og:type" content="website">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>メン地下めろ顔AI診断 💖</title>
+    
+    <!-- Google Fonts & Tailwind CSS -->
+    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@700;900&display=swap" rel="stylesheet">
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- html2canvas -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
 
-  <!-- html2canvas -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  
-  <!-- Google Fonts: Zen Maru Gothic / Plus Jakarta Sans -->
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@700;800&family=Zen+Maru+Gothic:wght@500;700;900&display=swap" rel="stylesheet">
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        yumekawa: {
+                            pink: '#FFB7C5',
+                            lightpink: '#FFF0F5',
+                            lavender: '#E6E6FA',
+                            purple: '#D8BFD8',
+                            darkpink: '#FF69B4',
+                            text: '#5A4A57'
+                        }
+                    },
+                    fontFamily: {
+                        maru: ['"Zen Maru Gothic"', 'sans-serif'],
+                        rounded: ['"M PLUS Rounded 1c"', 'sans-serif']
+                    }
+                }
+            }
+        }
+    </script>
 
-  <style>
-    :root {
-      --bg-gradient: linear-gradient(135deg, #fce4ec 0%, #f3e5f5 50%, #e8eaf6 100%);
-      --card-glass: rgba(255, 255, 255, 0.85);
-      --card-border: rgba(255, 255, 255, 0.9);
-      --primary-pink: #ff6b8b;
-      --accent-purple: #8a4af3;
-      --text-main: #2c2c3e;
-      --text-sub: #7a7a9a;
-      --shadow-soft: 0 12px 32px rgba(255, 107, 139, 0.15);
-      --shadow-card: 0 8px 24px rgba(0, 0, 0, 0.06);
-      --radius-main: 24px;
-      --radius-card: 16px;
-    }
+    <style>
+        body {
+            font-family: 'Zen Maru Gothic', sans-serif;
+            background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 100%);
+            color: #5A4A57;
+            touch-action: manipulation;
+        }
 
-    * {
-      box-sizing: border-box;
-      margin: 0;
-      padding: 0;
-      font-family: 'Zen Maru Gothic', -apple-system, BlinkMacSystemFont, sans-serif;
-      -webkit-tap-highlight-color: transparent;
-    }
+        /* ガラスモーフィズム */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.75);
+            backdrop-filter: blur(10px);
+            -webkit-backdrop-filter: blur(10px);
+            border: 2px solid rgba(255, 183, 197, 0.5);
+            box-shadow: 0 8px 32px 0 rgba(255, 182, 193, 0.2);
+        }
 
-    body {
-      background: var(--bg-gradient);
-      background-attachment: fixed;
-      color: var(--text-main);
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      min-height: 100vh;
-      padding: 16px 10px;
-      overflow-x: hidden;
-    }
+        /* 選択時ハイライト */
+        .card-selected {
+            border: 3.5px solid #FF69B4 !important;
+            box-shadow: 0 0 18px rgba(255, 105, 180, 0.6) !important;
+            transform: scale(0.97);
+        }
 
-    /* 背景の浮遊グラデーション光風エフェクト */
-    body::before {
-      content: '';
-      position: fixed;
-      top: -10%;
-      left: -10%;
-      width: 120%;
-      height: 120%;
-      background: radial-gradient(circle at 20% 20%, rgba(255, 182, 193, 0.3) 0%, transparent 40%),
-                  radial-gradient(circle at 80% 80%, rgba(216, 191, 216, 0.3) 0%, transparent 40%);
-      pointer-events: none;
-      z-index: -1;
-    }
+        /* ハートアニメーション */
+        @keyframes floatUp {
+            0% { opacity: 1; transform: translateY(0) scale(0.8); }
+            100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
+        }
+        .heart-effect {
+            position: absolute;
+            pointer-events: none;
+            animation: floatUp 0.8s ease-out forwards;
+            color: #FF69B4;
+            font-size: 2rem;
+            z-index: 50;
+        }
 
-    .container {
-      width: 100%;
-      max-width: 440px;
-      margin: 0 auto;
-    }
-
-    .hidden {
-      display: none !important;
-    }
-
-    /* --- 1. スタート画面 --- */
-    .start-card {
-      background: var(--card-glass);
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      border: 2px solid var(--card-border);
-      border-radius: var(--radius-main);
-      padding: 36px 24px;
-      text-align: center;
-      box-shadow: var(--shadow-soft);
-      animation: fadeIn 0.6s cubic-bezier(0.16, 1, 0.3, 1);
-    }
-
-    .badge-sub {
-      display: inline-block;
-      background: linear-gradient(135deg, var(--primary-pink), var(--accent-purple));
-      color: #fff;
-      font-size: 11px;
-      font-weight: 700;
-      padding: 4px 14px;
-      border-radius: 20px;
-      margin-bottom: 12px;
-      letter-spacing: 0.5px;
-      box-shadow: 0 4px 12px rgba(255, 107, 139, 0.3);
-    }
-
-    .start-card h1 {
-      font-size: 26px;
-      font-weight: 900;
-      margin-bottom: 8px;
-      background: linear-gradient(135deg, #ff477e, #7b2cbf);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      letter-spacing: -0.5px;
-      line-height: 1.25;
-    }
-
-    .tagline {
-      font-size: 13px;
-      font-weight: 700;
-      color: var(--accent-purple);
-      margin-bottom: 20px;
-    }
-
-    .description-box {
-      background: rgba(255, 255, 255, 0.7);
-      border-radius: 16px;
-      padding: 16px;
-      margin-bottom: 28px;
-      font-size: 13px;
-      color: var(--text-main);
-      line-height: 1.6;
-      border: 1px solid rgba(255, 255, 255, 0.8);
-    }
-
-    /* --- 2. 対戦画面 --- */
-    .battle-header {
-      text-align: center;
-      margin-bottom: 16px;
-    }
-
-    .progress-wrapper {
-      background: rgba(255, 255, 255, 0.6);
-      border-radius: 20px;
-      padding: 4px 6px;
-      display: flex;
-      align-items: center;
-      gap: 10px;
-      backdrop-filter: blur(8px);
-      border: 1px solid var(--card-border);
-      box-shadow: var(--shadow-card);
-    }
-
-    .progress-bar-bg {
-      flex: 1;
-      height: 8px;
-      background: rgba(0, 0, 0, 0.06);
-      border-radius: 10px;
-      overflow: hidden;
-      margin-left: 8px;
-    }
-
-    .progress-bar-fill {
-      height: 100%;
-      width: 10%;
-      background: linear-gradient(90deg, var(--primary-pink), var(--accent-purple));
-      border-radius: 10px;
-      transition: width 0.3s ease;
-    }
-
-    .progress-text {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 13px;
-      font-weight: 800;
-      color: var(--accent-purple);
-      padding-right: 8px;
-    }
-
-    .battle-instruction {
-      text-align: center;
-      font-size: 15px;
-      font-weight: 700;
-      margin-bottom: 16px;
-      color: var(--text-main);
-      text-shadow: 0 2px 4px rgba(255, 255, 255, 0.8);
-    }
-
-    .battle-container {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 14px;
-    }
-
-    .card {
-      position: relative;
-      background: var(--card-glass);
-      backdrop-filter: blur(8px);
-      border-radius: var(--radius-main);
-      overflow: hidden;
-      border: 2px solid var(--card-border);
-      box-shadow: var(--shadow-card);
-      cursor: pointer;
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), box-shadow 0.2s ease;
-      display: flex;
-      flex-direction: column;
-    }
-
-    .card:active {
-      transform: scale(0.95);
-    }
-
-    .img-container {
-      width: 100%;
-      padding-top: 133%; /* 3:4に近い美しい縦横比 */
-      background-color: #f3f3f8;
-      position: relative;
-      overflow: hidden;
-    }
-
-    .img-container img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-      display: block;
-      transition: opacity 0.25s ease;
-    }
-
-    .btn-select {
-      width: 100%;
-      padding: 12px 0;
-      background: #ffffff;
-      color: var(--primary-pink);
-      border: none;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 13px;
-      font-weight: 800;
-      letter-spacing: 1px;
-      cursor: pointer;
-      border-top: 1px solid rgba(255, 107, 139, 0.15);
-      transition: background 0.2s;
-    }
-
-    .card:hover .btn-select {
-      background: var(--primary-pink);
-      color: #ffffff;
-    }
-
-    /* タップ時のハートバースト */
-    .heart {
-      position: absolute;
-      font-size: 32px;
-      pointer-events: none;
-      animation: heartFloat 0.75s ease-out forwards;
-      z-index: 10;
-      filter: drop-shadow(0 4px 8px rgba(0,0,0,0.15));
-    }
-
-    @keyframes heartFloat {
-      0% {
-        opacity: 1;
-        transform: translate(-50%, -50%) scale(0.6) rotate(0deg);
-      }
-      50% {
-        transform: translate(-50%, -90%) scale(1.3) rotate(-10deg);
-      }
-      100% {
-        opacity: 0;
-        transform: translate(-50%, -140%) scale(1) rotate(10deg);
-      }
-    }
-
-    /* --- 3. 結果画面 (SNSキャプチャカード) --- */
-    .capture-area {
-      background: linear-gradient(180deg, #ffffff 0%, #fff5f8 100%);
-      padding: 24px 18px 20px 18px;
-      border-radius: var(--radius-main);
-      box-shadow: 0 16px 40px rgba(255, 107, 139, 0.2);
-      border: 2px solid #ffffff;
-      position: relative;
-    }
-
-    .result-header-badge {
-      text-align: center;
-      margin-bottom: 4px;
-    }
-
-    .result-header-badge span {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 10px;
-      font-weight: 800;
-      letter-spacing: 2px;
-      color: var(--accent-purple);
-      background: rgba(138, 74, 243, 0.08);
-      padding: 3px 10px;
-      border-radius: 12px;
-    }
-
-    .result-title {
-      text-align: center;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 20px;
-      font-weight: 800;
-      letter-spacing: -0.5px;
-      background: linear-gradient(135deg, #ff477e, #7b2cbf);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      margin-bottom: 16px;
-    }
-
-    /* TOP1（大月とき特別フィーチャー枠） */
-    .top1-hero-card {
-      background: linear-gradient(135deg, #fff0f5 0%, #f3e8ff 100%);
-      border: 2px solid var(--primary-pink);
-      border-radius: 18px;
-      padding: 12px;
-      margin-bottom: 14px;
-      display: flex;
-      align-items: center;
-      gap: 14px;
-      box-shadow: 0 6px 16px rgba(255, 107, 139, 0.15);
-      position: relative;
-      overflow: hidden;
-    }
-
-    .top1-hero-card::after {
-      content: 'SPECIAL MATCH';
-      position: absolute;
-      top: 10px;
-      right: -24px;
-      background: var(--primary-pink);
-      color: #fff;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 8px;
-      font-weight: 800;
-      padding: 2px 26px;
-      transform: rotate(30deg);
-      box-shadow: 0 2px 6px rgba(0,0,0,0.1);
-    }
-
-    .top1-img-wrapper {
-      width: 86px;
-      height: 108px;
-      border-radius: 12px;
-      overflow: hidden;
-      flex-shrink: 0;
-      position: relative;
-      border: 2px solid #ffffff;
-      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-    }
-
-    .top1-img-wrapper img {
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .top1-info {
-      flex: 1;
-    }
-
-    .top1-rank-tag {
-      display: inline-flex;
-      align-items: center;
-      gap: 4px;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 11px;
-      font-weight: 800;
-      color: var(--primary-pink);
-      background: #ffffff;
-      padding: 2px 8px;
-      border-radius: 10px;
-      margin-bottom: 4px;
-    }
-
-    .top1-name {
-      font-size: 16px;
-      font-weight: 900;
-      color: var(--text-main);
-      line-height: 1.2;
-    }
-
-    .top1-group {
-      font-size: 11px;
-      font-weight: 700;
-      color: var(--text-sub);
-      margin-bottom: 6px;
-    }
-
-    .top1-score-badge {
-      display: inline-block;
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 12px;
-      font-weight: 800;
-      color: #ffffff;
-      background: linear-gradient(90deg, #ff477e, #8a4af3);
-      padding: 3px 10px;
-      border-radius: 12px;
-    }
-
-    /* TOP2〜9 グリッド (4列×2行 または 3列) */
-    .grid-container {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 8px;
-    }
-
-    .grid-card {
-      background: #ffffff;
-      border-radius: 12px;
-      overflow: hidden;
-      border: 1px solid #f0e6f5;
-      display: flex;
-      flex-direction: column;
-      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.03);
-    }
-
-    .grid-card .img-wrapper {
-      width: 100%;
-      padding-top: 125%;
-      position: relative;
-      background: #f5f5f8;
-    }
-
-    .grid-card .img-wrapper img {
-      position: absolute;
-      top: 0;
-      left: 0;
-      width: 100%;
-      height: 100%;
-      object-fit: cover;
-    }
-
-    .card-meta {
-      padding: 5px 4px;
-      text-align: center;
-    }
-
-    .rank-row {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 2px;
-      padding: 0 2px;
-    }
-
-    .rank-number {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 9px;
-      font-weight: 800;
-      color: var(--accent-purple);
-    }
-
-    .score-text {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 8px;
-      font-weight: 800;
-      color: var(--primary-pink);
-    }
-
-    .grid-name {
-      font-size: 10px;
-      font-weight: 700;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-      color: var(--text-main);
-    }
-
-    .grid-group {
-      font-size: 8px;
-      color: var(--text-sub);
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-
-    .capture-footer {
-      margin-top: 14px;
-      padding-top: 10px;
-      border-top: 1px dashed #f0d8e8;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    .capture-footer-brand {
-      font-family: 'Plus Jakarta Sans', sans-serif;
-      font-size: 10px;
-      font-weight: 800;
-      color: var(--text-sub);
-    }
-
-    .capture-footer-tag {
-      font-size: 9px;
-      font-weight: 700;
-      color: var(--primary-pink);
-      background: rgba(255, 107, 139, 0.1);
-      padding: 2px 8px;
-      border-radius: 8px;
-    }
-
-    /* 共通ボタンコンポーネント */
-    .btn-main {
-      width: 100%;
-      padding: 16px;
-      background: linear-gradient(135deg, var(--primary-pink), var(--accent-purple));
-      color: #ffffff;
-      border: none;
-      border-radius: 30px;
-      font-size: 15px;
-      font-weight: 800;
-      cursor: pointer;
-      box-shadow: 0 6px 20px rgba(255, 107, 139, 0.35);
-      transition: transform 0.2s cubic-bezier(0.34, 1.56, 0.64, 1), opacity 0.2s;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-      gap: 8px;
-    }
-
-    .btn-main:active {
-      transform: scale(0.97);
-      opacity: 0.9;
-    }
-
-    /* X (Twitter) シェア専用ボタン */
-    .btn-x {
-      background: #000000;
-      color: #ffffff;
-      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.25);
-    }
-
-    .btn-secondary {
-      background: rgba(255, 255, 255, 0.85);
-      color: var(--text-main);
-      border: 1px solid var(--card-border);
-      box-shadow: var(--shadow-card);
-    }
-
-    .action-group {
-      margin-top: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
-
-    /* 友達への拡散プロンプトメッセージ */
-    .share-prompt {
-      text-align: center;
-      font-size: 12px;
-      font-weight: 700;
-      color: var(--text-sub);
-      margin-top: 6px;
-    }
-
-    /* フェードインアニメーション */
-    @keyframes fadeIn {
-      from { opacity: 0; transform: translateY(12px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
-
-    .animate-fade {
-      animation: fadeIn 0.4s ease forwards;
-    }
-  </style>
+        /* カスタムスクロールバー非表示 */
+        .no-scrollbar::-webkit-scrollbar { display: none; }
+        .no-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+    </style>
 </head>
-<body>
+<body class="min-h-screen flex flex-col justify-between items-center p-3 select-none">
 
-  <div class="container">
+    <!-- ヘッダー -->
+    <header class="w-full max-w-md text-center my-2">
+        <h1 class="text-2xl font-black text-yumekawa-darkpink tracking-wider font-rounded drop-shadow-sm">
+            🎀 メン地下めろ顔AI診断 🎀
+        </h1>
+        <p class="text-xs text-yumekawa-text font-bold mt-1">直感で好みのタイプを1〜2人選んでね♡</p>
+    </header>
 
-    <!-- 1. スタート画面 -->
-    <div id="start-section" class="start-card">
-      <div class="badge-sub">AI 推し顔分析ツール</div>
-      <h1>メン地下めろ顔<br>AI診断</h1>
-      <p class="tagline">あなたの“好き”をAIが解読♡</p>
-      
-      <div class="description-box">
-        表示される2枚の写真から直感でタイプを選んでね！<br>
-        全10回の選択で、AIがあなたの潜在的な好み顔を分析して<strong>「推し顔 TOP9」</strong>を割り出します✨
-      </div>
+    <!-- メインコンテンツ領域 -->
+    <main class="w-full max-w-md flex-1 flex flex-col justify-center items-center">
 
-      <button class="btn-main" onclick="startApp()">
-        <span>診断をはじめる 💖</span>
-      </button>
-    </div>
-
-    <!-- 2. 対戦画面 -->
-    <div id="battle-section" class="hidden">
-      <div class="battle-header">
-        <div class="progress-wrapper">
-          <div class="progress-bar-bg">
-            <div id="progress-bar" class="progress-bar-fill"></div>
-          </div>
-          <span id="progress" class="progress-text">01 / 10</span>
-        </div>
-      </div>
-
-      <p class="battle-instruction">どっちの顔がタイプ？ 直感で選んでね♡</p>
-
-      <div class="battle-container">
-        <!-- 左側 -->
-        <div class="card" onclick="selectImage('left', event)">
-          <div class="img-container">
-            <img id="img1" src="" alt="Option 1">
-          </div>
-          <button class="btn-select" type="button">SELECT</button>
-        </div>
-
-        <!-- 右側 -->
-        <div class="card" onclick="selectImage('right', event)">
-          <div class="img-container">
-            <img id="img2" src="" alt="Option 2">
-          </div>
-          <button class="btn-select" type="button">SELECT</button>
-        </div>
-      </div>
-    </div>
-
-    <!-- 3. 結果画面 -->
-    <div id="result-section" class="hidden animate-fade">
-      
-      <!-- キャプチャ対象エリア (スクショ映えカード) -->
-      <div id="capture-area" class="capture-area">
-        <div class="result-header-badge">
-          <span>AI DIAGNOSIS RESULT</span>
-        </div>
-        <h2 class="result-title">MY TOP 9 MATCHES</h2>
-
-        <!-- #01: 大月 とき 固定フィーチャー枠 -->
-        <div class="top1-hero-card">
-          <div class="top1-img-wrapper">
-            <img id="top1-img" src="" alt="大月 とき">
-          </div>
-          <div class="top1-info">
-            <div class="top1-rank-tag">👑 #01 SPECIAL</div>
-            <div class="top1-name">大月 とき</div>
-            <div class="top1-group">SKYXROS</div>
-            <div class="top1-score-badge">100% MATCH</div>
-          </div>
-        </div>
-
-        <!-- #02〜#09: AIランキング 8名（グリッド表示） -->
-        <div id="grid" class="grid-container">
-          <!-- JSで動的挿入 -->
-        </div>
-
-        <div class="capture-footer">
-          <span class="capture-footer-brand">メン地下めろ顔AI診断</span>
-          <span class="capture-footer-tag">#メン地下めろ顔AI診断</span>
-        </div>
-      </div>
-
-      <!-- アクションボタン群 -->
-      <div class="action-group">
-        <button class="btn-main" onclick="downloadResultImage()">
-          <span>📸 結果画像を保存する</span>
-        </button>
-        <button class="btn-main btn-x" onclick="shareToX()">
-          <span>𝕏 で結果をシェアする</span>
-        </button>
-        <button class="btn-main btn-secondary" onclick="resetApp()">
-          <span>🔄 もう一度診断する</span>
-        </button>
-        <p class="share-prompt">友達にも結果を共有してタイプを比べよう♡</p>
-      </div>
-
-    </div>
-
-  </div>
-
-  <script>
-    // 配信元・ドメイン自動判別
-    const API = location.origin.startsWith("http") ? location.origin : "http://127.0.0.1:8000";
-
-    let round = 1, userVector = null, currentPair = null, historyIds = [];
-    // Xシェア用に数値上1位のメンバー情報を保持する変数（既存仕様を完全保持）
-    let topMatchMember = null;
-
-    // 画像URLフォーマット関数（NFC正規化 & 日本語パス対応を維持）
-    function formatImageUrl(url) {
-      if (!url) return "";
-      if (url.startsWith("http://") || url.startsWith("https://")) return url;
-      
-      const cleanPath = url.replace(/\\/g, '/').replace(/^\//, '').normalize("NFC");
-      const parts = cleanPath.split('/').map(p => encodeURIComponent(p));
-      return `${API}/${parts.join('/')}`;
-    }
-
-    // パスからグループ名とメンバー名を解析する関数（既存仕様を維持）
-    function parseGroupAndName(item) {
-      const path = item.image_url || item.id || "";
-      const parts = path.split(/[\/\\]/).filter(p => p.length > 0);
-      
-      let groupName = "";
-      let memberName = "";
-
-      if (parts.length >= 2) {
-        memberName = parts[parts.length - 1].replace(/\.[^/.]+$/, "");
-        const potentialGroup = parts[parts.length - 2];
-        if (potentialGroup !== "images") {
-          groupName = potentialGroup;
-        }
-      } else {
-        memberName = parts[0] ? parts[0].replace(/\.[^/.]+$/, "") : "";
-      }
-
-      if (!groupName) {
-        const match = memberName.match(/(.+)\((.+)\)/);
-        if (match) {
-          memberName = match[1].trim();
-          groupName = match[2].trim();
-        }
-      }
-
-      return { groupName, memberName };
-    }
-
-    function startApp() {
-      document.getElementById("start-section").classList.add("hidden");
-      document.getElementById("battle-section").classList.remove("hidden");
-      loadNext();
-    }
-
-    async function loadNext() {
-      try {
-        const res = await fetch(`${API}/api/next-pair`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_vector: userVector, history_ids: historyIds })
-        });
-
-        if (!res.ok) throw new Error("APIレスポンスエラー");
-
-        currentPair = await res.json();
-        
-        // 画像読み込み
-        const img1 = document.getElementById("img1");
-        const img2 = document.getElementById("img2");
-
-        img1.style.opacity = "0";
-        img2.style.opacity = "0";
-
-        img1.src = formatImageUrl(currentPair.item1.image_url);
-        img2.src = formatImageUrl(currentPair.item2.image_url);
-
-        img1.onload = () => img1.style.opacity = "1";
-        img2.onload = () => img2.style.opacity = "1";
-
-      } catch (err) {
-        console.error("画像読み込み失敗:", err);
-      }
-    }
-
-    async function selectImage(side, event) {
-      if (event) event.stopPropagation();
-      if (!currentPair) return;
-
-      createHeart(event);
-
-      const selected = side === 'left' ? currentPair.item1 : currentPair.item2;
-      historyIds.push(currentPair.item1.id, currentPair.item2.id);
-
-      try {
-        const res = await fetch(`${API}/api/update-vector`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_vector: userVector, selected_id: selected.id })
-        });
-
-        if (!res.ok) throw new Error("ベクトル更新エラー");
-
-        const data = await res.json();
-        userVector = data.user_vector;
-
-        if (round < 10) {
-          round++;
-          // 進捗バーとテキストの更新
-          document.getElementById("progress").textContent = `${String(round).padStart(2, '0')} / 10`;
-          document.getElementById("progress-bar").style.width = `${(round / 10) * 100}%`;
-          await loadNext();
-        } else {
-          showResult();
-        }
-      } catch (err) {
-        console.error("更新エラー:", err);
-      }
-    }
-
-    function createHeart(e) {
-      if (!e) return;
-      const card = e.currentTarget;
-      const rect = card.getBoundingClientRect();
-      const heart = document.createElement("div");
-      heart.className = "heart";
-      heart.innerHTML = "💖";
-      heart.style.left = (e.clientX - rect.left) + "px";
-      heart.style.top = (e.clientY - rect.top) + "px";
-      card.appendChild(heart);
-      setTimeout(() => heart.remove(), 750);
-    }
-
-    async function showResult() {
-      document.getElementById("battle-section").classList.add("hidden");
-      document.getElementById("result-section").classList.remove("hidden");
-
-      try {
-        const res = await fetch(`${API}/api/top9`, {
-          method: "POST",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ user_vector: userVector })
-        });
-        const data = await res.json();
-        const grid = document.getElementById("grid");
-        grid.innerHTML = "";
-
-        // 数値上トップ（実質AI1位）の情報を保存（Xシェア用：既存仕様保持）
-        if (data.top9 && data.top9.length > 0) {
-          topMatchMember = data.top9[0];
-        }
-
-        // 1. #01固定表示：作成者（大月 とき）の画像設定
-        const creatorPath = "images/SKYXROS/大月 とき.jpg";
-        document.getElementById("top1-img").src = formatImageUrl(creatorPath);
-
-        // 2. AI選出の上位8名（#02〜#09）をカードグリッドに描写
-        const top8 = data.top9.slice(0, 8);
-        let htmlContent = "";
-
-        top8.forEach((item, i) => {
-          const rankNum = String(i + 2).padStart(2, '0');
-          const { groupName, memberName } = parseGroupAndName(item);
-
-          htmlContent += `
-            <div class="grid-card">
-              <div class="img-wrapper">
-                <img src="${formatImageUrl(item.image_url)}" alt="${memberName}">
-              </div>
-              <div class="card-meta">
-                <div class="rank-row">
-                  <span class="rank-number">#${rankNum}</span>
-                  <span class="score-text">${item.score}%</span>
-                </div>
-                <div class="grid-name">${memberName}</div>
-                ${groupName ? `<div class="grid-group">${groupName}</div>` : ''}
-              </div>
+        <!-- スタート画面 -->
+        <div id="start-screen" class="glass-card w-full rounded-3xl p-6 text-center space-y-6">
+            <div class="space-y-2">
+                <span class="inline-block bg-yumekawa-pink text-white text-xs font-bold px-3 py-1 rounded-full">ガチAI分析 🧠✨</span>
+                <h2 class="text-xl font-bold text-yumekawa-text">あなたの「潜在的な好み」を完全可視化！</h2>
             </div>
-          `;
-        });
 
-        grid.innerHTML = htmlContent;
+            <div class="bg-white/80 rounded-2xl p-4 text-xs text-left space-y-2 leading-relaxed border border-yumekawa-pink/30">
+                <p>💖 <strong>10問の4択テスト</strong>で直感的に推し顔を選ぶだけ！</p>
+                <p>💖 各問題で<strong>最大2人（1〜2人）</strong>を選択できます。</p>
+                <p>💖 AIがあなたの選択から多次元ベクトルをリアルタイム計算！</p>
+            </div>
 
-      } catch (err) {
-        console.error("TOP9取得エラー:", err);
-      }
-    }
+            <button id="start-btn" onclick="startDiagnosis()" class="w-full py-4 bg-gradient-to-r from-yumekawa-pink to-yumekawa-darkpink text-white text-lg font-black rounded-2xl shadow-lg hover:opacity-90 transition active:scale-95 font-rounded">
+                診断をスタートする 💖
+            </button>
+        </div>
 
-    function downloadResultImage() {
-      const captureArea = document.getElementById("capture-area");
-      
-      html2canvas(captureArea, {
-        useCORS: true,
-        scale: 2, // 高解像度保存
-        backgroundColor: "#ffffff",
-        borderRadius: 24
-      }).then(canvas => {
-        const link = document.createElement("a");
-        link.download = "my_top9_result.png";
-        link.href = canvas.toDataURL("image/png");
-        link.click();
-      });
-    }
+        <!-- 診断画面（2×2 グリッド） -->
+        <div id="quiz-screen" class="w-full space-y-4 hidden">
+            <!-- 進捗バー -->
+            <div class="w-full bg-white/60 rounded-full h-3 p-0.5 border border-yumekawa-pink/40 shadow-inner">
+                <div id="progress-bar" class="bg-gradient-to-r from-yumekawa-pink to-yumekawa-darkpink h-full rounded-full transition-all duration-300" style="width: 10%;"></div>
+            </div>
+            <div class="flex justify-between items-center text-xs font-bold text-yumekawa-text px-1">
+                <span id="step-count">Q.1 / 10</span>
+                <span class="text-yumekawa-darkpink">1〜2人選んで「次へ」を押してね♡</span>
+            </div>
 
-    // X(Twitter)シェア機能（AI1位情報を含めたシェアロジックを完全維持）
-    function shareToX() {
-      const appUrl = window.location.origin.startsWith("http") ? window.location.href : "https://your-app-url.com";
-      
-      let topName = "推し";
-      let topScore = 99;
+            <!-- 2×2 画像グリッド -->
+            <div id="candidates-grid" class="grid grid-cols-2 gap-3 w-full">
+                <!-- JavaScriptで4枚カードを生成 -->
+            </div>
 
-      if (topMatchMember) {
-        const parsed = parseGroupAndName(topMatchMember);
-        topName = parsed.memberName || "推し";
-        topScore = topMatchMember.score || 99;
-      }
+            <!-- 次へボタン -->
+            <button id="next-btn" onclick="submitSelection()" class="w-full py-3.5 bg-gradient-to-r from-yumekawa-pink to-yumekawa-darkpink text-white font-black rounded-2xl shadow-md hover:opacity-90 transition active:scale-95 font-rounded text-base flex justify-center items-center gap-2">
+                次へすすむ ✨
+            </button>
+        </div>
 
-      const text = `【メン地下めろ顔AI診断】私の推し顔TOP9診断結果♡\nAIが分析した私のめろ顔タイプ1位は ${topScore}% MATCH で「${topName}」でした✨\n\nあなたは何タイプ？診断してみてね👇\n#メン地下めろ顔AI診断 #メン地下 #推し顔診断\n`;
-      const xUrl = `https://twitter.com/intent/tweet?text=${encodeURIComponent(text)}&url=${encodeURIComponent(appUrl)}`;
-      window.open(xUrl, '_blank');
-    }
+        <!-- 結果画面 -->
+        <div id="result-screen" class="w-full space-y-4 hidden">
+            <!-- キャプチャ対象エリア（トレーディングカード風） -->
+            <div id="capture-area" class="glass-card w-full rounded-3xl p-4 text-center space-y-3 bg-gradient-to-b from-white/90 to-yumekawa-lightpink/90">
+                <div>
+                    <span class="text-xs font-bold text-yumekawa-darkpink tracking-widest">MY TOP 9 MATCHES</span>
+                    <h2 class="text-lg font-black text-yumekawa-text font-rounded">💖 メン地下めろ顔診断結果 💖</h2>
+                </div>
 
-    // もう一度診断する（アプリリセット）
-    function resetApp() {
-      round = 1;
-      userVector = null;
-      currentPair = null;
-      historyIds = [];
-      topMatchMember = null;
+                <!-- TOP 9 グリッド（3×3） -->
+                <div id="top9-grid" class="grid grid-cols-3 gap-2 w-full">
+                    <!-- JavaScriptで3×3カードを動的生成 -->
+                </div>
 
-      document.getElementById("progress").textContent = "01 / 10";
-      document.getElementById("progress-bar").style.width = "10%";
-      document.getElementById("result-section").classList.add("hidden");
-      document.getElementById("start-section").classList.remove("hidden");
-    }
-  </script>
+                <div class="text-[10px] text-yumekawa-text/70 font-bold pt-1">
+                    #メン地下めろ顔AI診断  |  制作：大月 とき👑
+                </div>
+            </div>
+
+            <!-- アクションボタン群 -->
+            <div class="space-y-2 w-full">
+                <button onclick="shareToX()" class="w-full py-3 bg-black text-white font-bold rounded-xl shadow hover:bg-gray-800 transition flex justify-center items-center gap-2 text-sm">
+                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
+                    X(旧Twitter)で結果をポストする
+                </button>
+
+                <button onclick="saveImage()" class="w-full py-3 bg-yumekawa-pink text-white font-bold rounded-xl shadow hover:opacity-90 transition text-sm">
+                    📷 画像として保存する（スクショ用）
+                </button>
+
+                <button onclick="restart()" class="w-full py-2.5 bg-white/80 text-yumekawa-text font-bold rounded-xl border border-yumekawa-pink/50 hover:bg-white transition text-xs">
+                    🔄 もう一度診断する
+                </button>
+            </div>
+        </div>
+
+    </main>
+
+    <!-- フッター -->
+    <footer class="w-full text-center text-[10px] text-yumekawa-text/60 py-2">
+        &copy; メン地下めろ顔AI診断 | SKYXROS 大月 とき
+    </footer>
+
+    <!-- JavaScript ロジック -->
+    <script>
+        const TOTAL_STEPS = 10;
+        const VECTOR_DIM = 64;
+
+        let currentStep = 1;
+        let userVector = [];
+        let shownIds = [];
+        let currentCandidates = [];
+        let selectedIds = [];
+        let trueNo1Name = "";
+
+        // 初期化（ランダムベクトル）
+        function initUserVector() {
+            userVector = [];
+            for (let i = 0; i < VECTOR_DIM; i++) {
+                userVector.push((Math.random() - 0.5) * 2);
+            }
+        }
+
+        // 診断開始
+        async function startDiagnosis() {
+            initUserVector();
+            currentStep = 1;
+            shownIds = [];
+            selectedIds = [];
+
+            document.getElementById('start-screen').classList.add('hidden');
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('quiz-screen').classList.remove('hidden');
+
+            await fetchCandidates();
+        }
+
+        // 候補取得（/api/next-candidates）
+        async function fetchCandidates() {
+            selectedIds = [];
+            updateProgress();
+
+            try {
+                const res = await fetch('/api/next-candidates', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        step: currentStep,
+                        user_vector: userVector,
+                        shown_ids: shownIds
+                    })
+                });
+
+                if (!res.ok) throw new Error("Failed to fetch candidates");
+                const data = await res.json();
+                currentCandidates = data.candidates;
+
+                // 既出IDに追加
+                currentCandidates.forEach(c => shownIds.push(c.id));
+
+                renderCandidates();
+            } catch (err) {
+                console.error(err);
+                alert("データの読み込みに失敗しました。もう一度お試しください。");
+            }
+        }
+
+        // 候補画像（2×2）描画
+        function renderCandidates() {
+            const grid = document.getElementById('candidates-grid');
+            grid.innerHTML = '';
+
+            currentCandidates.forEach((c) => {
+                const card = document.createElement('div');
+                card.className = `glass-card rounded-2xl p-2 flex flex-col items-center justify-between cursor-pointer transition-all relative overflow-hidden bg-white/90`;
+                card.dataset.id = c.id;
+
+                // 日本語画像URLのNFC正規化・エンコード対応
+                const cleanUrl = encodeURI(c.image_url.normalize("NFC"));
+
+                card.innerHTML = `
+                    <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100">
+                        <img src="${cleanUrl}" alt="${c.name}" class="w-full h-full object-cover pointer-events-none" loading="eager" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
+                        <div class="check-badge hidden absolute top-2 right-2 bg-yumekawa-darkpink text-white rounded-full p-1 shadow-md">
+                            <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z"/></svg>
+                        </div>
+                    </div>
+                    <div class="text-center mt-2 w-full px-1">
+                        <p class="text-[10px] text-yumekawa-text/70 truncate font-bold">${c.group}</p>
+                        <p class="text-xs font-black text-yumekawa-text truncate">${c.name}</p>
+                    </div>
+                `;
+
+                card.onclick = (e) => toggleSelection(card, c.id, e);
+                grid.appendChild(card);
+            });
+        }
+
+        // カード選択切り替え（最大2人）
+        function toggleSelection(card, id, e) {
+            const index = selectedIds.indexOf(id);
+
+            if (index > -1) {
+                // 選択解除
+                selectedIds.splice(index, 1);
+                card.classList.remove('card-selected');
+                card.querySelector('.check-badge').classList.add('hidden');
+            } else {
+                // 選択追加
+                if (selectedIds.length >= 2) {
+                    alert("選択できるのは最大2人までだよ♡");
+                    return;
+                }
+                selectedIds.push(id);
+                card.classList.add('card-selected');
+                card.querySelector('.check-badge').classList.remove('hidden');
+
+                // 💖 エフェクト生成
+                createHeartEffect(e.clientX, e.clientY);
+            }
+        }
+
+        // 💖 ハートエフェクト演出
+        function createHeartEffect(x, y) {
+            const heart = document.createElement('div');
+            heart.className = 'heart-effect';
+            heart.innerText = '💖';
+            heart.style.left = `${x - 15}px`;
+            heart.style.top = `${y - 20}px`;
+            document.body.appendChild(heart);
+
+            setTimeout(() => heart.remove(), 800);
+        }
+
+        // 次へ進む（/api/update-vector）
+        async function submitSelection() {
+            if (selectedIds.length === 0) {
+                alert("好きなタイプを1〜2人選んでね♡");
+                return;
+            }
+
+            try {
+                const res = await fetch('/api/update-vector', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_vector: userVector,
+                        selected_ids: selectedIds
+                    })
+                });
+
+                if (!res.ok) throw new Error("Failed to update vector");
+                const data = await res.json();
+                userVector = data.user_vector;
+
+                if (currentStep < TOTAL_STEPS) {
+                    currentStep++;
+                    await fetchCandidates();
+                } else {
+                    await showResult();
+                }
+            } catch (err) {
+                console.error(err);
+                alert("送信に失敗しました。");
+            }
+        }
+
+        // プログレスバー更新
+        function updateProgress() {
+            const pct = (currentStep / TOTAL_STEPS) * 100;
+            document.getElementById('progress-bar').style.width = `${pct}%`;
+            document.getElementById('step-count').innerText = `Q.${currentStep} / ${TOTAL_STEPS}`;
+        }
+
+        // 結果画面の表示（/api/top9）
+        async function showResult() {
+            try {
+                const res = await fetch('/api/top9', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ user_vector: userVector })
+                });
+
+                if (!res.ok) throw new Error("Failed to fetch top9");
+                const data = await res.json();
+
+                if (data.true_no1) {
+                    trueNo1Name = `${data.true_no1.group}の${data.true_no1.name}`;
+                }
+
+                renderTop9(data.top9);
+
+                document.getElementById('quiz-screen').classList.add('hidden');
+                document.getElementById('result-screen').classList.remove('hidden');
+            } catch (err) {
+                console.error(err);
+                alert("診断結果の計算に失敗しました。");
+            }
+        }
+
+        // TOP 9 (3×3) レンダリング
+        function renderTop9(top9List) {
+            const grid = document.getElementById('top9-grid');
+            grid.innerHTML = '';
+
+            top9List.forEach((item, index) => {
+                const rank = index + 1;
+                const isProducer = item.is_producer || rank === 1;
+
+                const card = document.createElement('div');
+                card.className = `relative rounded-xl overflow-hidden p-1.5 flex flex-col items-center justify-between text-center ${
+                    isProducer 
+                    ? 'bg-gradient-to-b from-yellow-100 to-yumekawa-pink border-2 border-yellow-400 shadow-md col-span-1' 
+                    : 'bg-white/90 border border-yumekawa-pink/40'
+                }`;
+
+                const cleanUrl = encodeURI(item.image_url.normalize("NFC"));
+
+                card.innerHTML = `
+                    <div class="absolute top-1 left-1 z-10 bg-yumekawa-darkpink text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">
+                        #0${rank}
+                    </div>
+                    <div class="w-full aspect-square rounded-lg overflow-hidden relative bg-gray-100 mt-3">
+                        <img src="${cleanUrl}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
+                    </div>
+                    <div class="mt-1 w-full">
+                        <p class="text-[8px] text-yumekawa-text/70 truncate font-bold">${item.group}</p>
+                        <p class="text-[10px] font-black text-yumekawa-text truncate">${item.name}</p>
+                        <span class="inline-block bg-yumekawa-lightpink text-yumekawa-darkpink text-[9px] font-extrabold px-1.5 py-0.5 rounded-md mt-0.5">
+                            ${item.match_score}% MATCH
+                        </span>
+                    </div>
+                `;
+
+                grid.appendChild(card);
+            });
+        }
+
+        // X(Twitter) シェア
+        function shareToX() {
+            const text = encodeURIComponent(
+                `『メン地下めろ顔AI診断』をやってみたよ🎀\n` +
+                `ガチAIが弾き出した私の本当のタイプは…✨\n` +
+                `（分析上の1位：${trueNo1Name}）\n\n` +
+                `#メン地下めろ顔AI診断 #推し顔診断 #メン地下\n`
+            );
+            const url = encodeURIComponent(window.location.href);
+            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
+        }
+
+        // キャプチャ画像保存
+        function saveImage() {
+            const target = document.getElementById('capture-area');
+            html2canvas(target, {
+                scale: 2,
+                useCORS: true,
+                backgroundColor: null
+            }).then(canvas => {
+                const link = document.createElement('a');
+                link.download = 'meloface_top9_result.png';
+                link.href = canvas.toDataURL('image/png');
+                link.click();
+            }).catch(err => {
+                console.error(err);
+                alert("画像の生成に失敗しました。スクショで保存してね！");
+            });
+        }
+
+        // リスタート
+        function restart() {
+            document.getElementById('result-screen').classList.add('hidden');
+            document.getElementById('start-screen').classList.remove('hidden');
+        }
+    </script>
 </body>
 </html>
