@@ -1,487 +1,168 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>メン地下めろ顔AI診断 💖</title>
-    
-    <!-- Google Fonts & Tailwind CSS -->
-    <link href="https://fonts.googleapis.com/css2?family=Zen+Maru+Gothic:wght@400;700;900&family=M+PLUS+Rounded+1c:wght@700;900&display=swap" rel="stylesheet">
-    <script src="https://cdn.tailwindcss.com"></script>
-    <!-- html2canvas & Chart.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-
-    <script>
-        tailwind.config = {
-            theme: {
-                extend: {
-                    colors: {
-                        yumekawa: {
-                            pink: '#FFB7C5',
-                            lightpink: '#FFF0F5',
-                            lavender: '#E6E6FA',
-                            purple: '#D8BFD8',
-                            darkpink: '#FF69B4',
-                            text: '#5A4A57'
-                        }
-                    },
-                    fontFamily: {
-                        maru: ['"Zen Maru Gothic"', 'sans-serif'],
-                        rounded: ['"M PLUS Rounded 1c"', 'sans-serif']
-                    }
-                }
-            }
-        }
-    </script>
-
-    <style>
-        body {
-            font-family: 'Zen Maru Gothic', sans-serif;
-            background: linear-gradient(135deg, #FFF0F5 0%, #E6E6FA 100%);
-            color: #5A4A57;
-            touch-action: manipulation;
-        }
-
-        .glass-card {
-            background: rgba(255, 255, 255, 0.85);
-            backdrop-filter: blur(10px);
-            -webkit-backdrop-filter: blur(10px);
-            border: 2px solid rgba(255, 183, 197, 0.5);
-            box-shadow: 0 8px 32px 0 rgba(255, 182, 193, 0.2);
-        }
-
-        .card-selected {
-            border: 3.5px solid #FF69B4 !important;
-            box-shadow: 0 0 18px rgba(255, 105, 180, 0.6) !important;
-            transform: scale(0.97);
-        }
-
-        @keyframes floatUp {
-            0% { opacity: 1; transform: translateY(0) scale(0.8); }
-            100% { opacity: 0; transform: translateY(-50px) scale(1.3); }
-        }
-        .heart-effect {
-            position: absolute;
-            pointer-events: none;
-            animation: floatUp 0.8s ease-out forwards;
-            color: #FF69B4;
-            font-size: 2rem;
-            z-index: 50;
-        }
-    </style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>メンズ地下アイドル メロ顔AI診断</title>
+  <style>
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background-color: #121212; color: #ffffff; text-align: center; margin: 0; padding: 20px; }
+    .container { max-width: 600px; margin: 0 auto; }
+    .card-container { display: flex; justify-content: space-around; margin-top: 20px; gap: 10px; }
+    .idol-card { background: #1e1e1e; border-radius: 12px; padding: 10px; width: 45%; cursor: pointer; border: 2px solid transparent; transition: 0.2s; }
+    .idol-card:hover { border-color: #ff4081; }
+    .idol-card img { width: 100%; border-radius: 8px; height: 200px; object-fit: cover; }
+    .skip-btn { margin-top: 25px; padding: 12px 24px; background: #333; color: #ccc; border: 1px solid #555; border-radius: 20px; cursor: pointer; font-size: 14px; }
+    .skip-btn:hover { background: #444; color: #fff; }
+    .hidden { display: none; }
+    .result-box { background: #1e1e1e; padding: 20px; border-radius: 12px; margin-top: 20px; text-align: left; }
+    .top9-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-top: 15px; }
+    .top9-item { background: #2a2a2a; padding: 5px; border-radius: 8px; text-align: center; font-size: 12px; }
+    .top9-item img { width: 100%; height: 100px; object-fit: cover; border-radius: 6px; }
+    .badge { background: #ff4081; color: white; padding: 2px 6px; border-radius: 4px; font-weight: bold; }
+  </style>
 </head>
-<body class="min-h-screen flex flex-col justify-between items-center p-3 select-none">
+<body>
 
-    <!-- ヘッダー -->
-    <header class="w-full max-w-md text-center my-2">
-        <h1 class="text-2xl font-black text-yumekawa-darkpink tracking-wider font-rounded drop-shadow-sm">
-            🎀 メン地下めろ顔AI診断 🎀
-        </h1>
-        <p class="text-xs text-yumekawa-text font-bold mt-1">直感で好みのタイプを1〜2人選んでね♡</p>
-    </header>
+<div class="container">
+  <h1>メン地下メロ顔AI診断</h1>
 
-    <!-- メインコンテンツ -->
-    <main class="w-full max-w-md flex-1 flex flex-col justify-center items-center">
+  <!-- 診断画面 -->
+  <div id="quiz-section">
+    <p id="progress">第 1 / 10 問：好みの顔を選んでね！</p>
+    <div class="card-container" id="candidates-box">
+      <!-- JSで候補カードを挿入 -->
+    </div>
+    <button class="skip-btn" onclick="skipQuestion()">好みのタイプがいない（スキップ）</button>
+  </div>
 
-        <!-- スタート画面 -->
-        <div id="start-screen" class="glass-card w-full rounded-3xl p-6 text-center space-y-6">
-            <div class="space-y-2">
-                <span class="inline-block bg-yumekawa-pink text-white text-xs font-bold px-3 py-1 rounded-full">ガチAI分析 🧠✨</span>
-                <h2 class="text-xl font-bold text-yumekawa-text">あなたの「潜在的な好み」を完全可視化！</h2>
-            </div>
+  <!-- 結果画面 -->
+  <div id="result-section" class="hidden">
+    <h2>診断結果</h2>
+    <div class="result-box">
+      <h3 id="result-type" style="color: #ff4081;">---</h3>
+      <p id="type-desc"></p>
+      <h4>🔥 毒舌アドバイス</h4>
+      <p id="toxic-advice" style="color: #ff80ab;"></p>
+      
+      <h4>📊 あなたの5軸スコア</h4>
+      <ul id="radar-scores"></ul>
 
-            <div class="bg-white/80 rounded-2xl p-4 text-xs text-left space-y-2 leading-relaxed border border-yumekawa-pink/30">
-                <p>💖 <strong>10問の4択テスト</strong>で直感的に推し顔を選ぶだけ！</p>
-                <p>💖 各問題で<strong>最大2人（1〜2人）</strong>を選択できます。</p>
-                <p>💖 AIが属性分析＆あなたの「めろ顔タイプ」とクセを辛口鑑定！</p>
-            </div>
+      <h4>💖 MY TOP 9</h4>
+      <div class="top9-grid" id="top9-box"></div>
+    </div>
+  </div>
+</div>
 
-            <button id="start-btn" onclick="startDiagnosis()" class="w-full py-4 bg-gradient-to-r from-yumekawa-pink to-yumekawa-darkpink text-white text-lg font-black rounded-2xl shadow-lg hover:opacity-90 transition active:scale-95 font-rounded">
-                診断をスタートする 💖
-            </button>
-        </div>
+<script>
+  // ※本番デプロイ時は Render 等のURL (例: https://xxx.onrender.com) に書き換えてください
+  const BASE_URL = 'http://localhost:8000'; 
+  
+  let currentQuestion = 1;
+  const totalQuestions = 10;
+  let selectedIdolIds = [];
 
-        <!-- 診断画面（2×2） -->
-        <div id="quiz-screen" class="w-full space-y-4 hidden">
-            <div class="w-full bg-white/60 rounded-full h-3 p-0.5 border border-yumekawa-pink/40 shadow-inner">
-                <div id="progress-bar" class="bg-gradient-to-r from-yumekawa-pink to-yumekawa-darkpink h-full rounded-full transition-all duration-300" style="width: 10%;"></div>
-            </div>
-            <div class="flex justify-between items-center text-xs font-bold text-yumekawa-text px-1">
-                <span id="step-count">Q.1 / 10</span>
-                <span class="text-yumekawa-darkpink">1〜2人選んで「次へ」を押してね♡</span>
-            </div>
+  // 初期読み込み
+  window.onload = () => {
+    loadNextCandidates();
+  };
 
-            <div id="candidates-grid" class="grid grid-cols-2 gap-3 w-full"></div>
+  // 次の候補2つを取得して表示
+  async function loadNextCandidates() {
+    try {
+      const res = await fetch(`${BASE_URL}/api/next-candidates`);
+      const data = await res.json();
+      
+      const box = document.getElementById('candidates-box');
+      box.innerHTML = '';
 
-            <button id="next-btn" onclick="submitSelection()" class="w-full py-3.5 bg-gradient-to-r from-yumekawa-pink to-yumekawa-darkpink text-white font-black rounded-2xl shadow-md hover:opacity-90 transition active:scale-95 font-rounded text-base flex justify-center items-center gap-2">
-                次へすすむ ✨
-            </button>
-        </div>
+      data.candidates.forEach(idol => {
+        const card = document.createElement('div');
+        card.className = 'idol-card';
+        card.onclick = () => selectIdol(idol.id);
+        card.innerHTML = `
+          <img src="${idol.image_url}" alt="${idol.name}">
+          <p><strong>${idol.name}</strong></p>
+          <p style="font-size: 12px; color: #aaa;">${idol.group}</p>
+        `;
+        box.appendChild(card);
+      });
+    } catch (e) {
+      console.error("候補取得エラー:", e);
+    }
+  }
 
-        <!-- 結果画面 -->
-        <div id="result-screen" class="w-full space-y-4 hidden">
-            <div id="capture-area" class="glass-card w-full rounded-3xl p-4 text-center space-y-4 bg-gradient-to-b from-white/95 to-yumekawa-lightpink/90">
-                
-                <!-- めろ顔タイプ判定表示 -->
-                <div class="bg-gradient-to-r from-yumekawa-pink/30 to-yumekawa-lavender/40 border border-yumekawa-pink/50 rounded-2xl p-3 space-y-2">
-                    <span class="text-[10px] font-black text-yumekawa-darkpink tracking-widest bg-white/80 px-2 py-0.5 rounded-full">AI ANALYSIS RESULT</span>
-                    <p class="text-xs font-bold text-yumekawa-text">あなたの「めろ顔」タイプは…</p>
-                    <h3 id="melo-type-title" class="text-lg font-black text-yumekawa-darkpink font-rounded drop-shadow-sm">
-                        『あざと甘々子犬めろ顔』
-                    </h3>
-                    
-                    <!-- 😈 毒舌コメント領域 -->
-                    <div class="bg-white/90 rounded-xl p-3 border border-yumekawa-pink/30 text-left space-y-1">
-                        <p class="text-[10px] font-black text-yumekawa-darkpink flex items-center gap-1">
-                            <span>😈</span> AIの毒舌沼落ち鑑定：
-                        </p>
-                        <p id="melo-comment-text" class="text-[11px] text-yumekawa-text leading-snug font-bold">
-                            ここに毒舌文言が入ります。
-                        </p>
-                    </div>
-                </div>
+  // 画像選択時
+  function selectIdol(id) {
+    selectedIdolIds.push(id);
+    nextStep();
+  }
 
-                <!-- TOP 9 グリッド（3×3） -->
-                <div>
-                    <h4 class="text-xs font-black text-yumekawa-text mb-2 font-rounded">💖 MY TOP 9 MATCHES 💖</h4>
-                    <div id="top9-grid" class="grid grid-cols-3 gap-2 w-full"></div>
-                </div>
+  // スキップ選択時
+  function skipQuestion() {
+    nextStep();
+  }
 
-                <!-- 属性分析レーダーチャート -->
-                <div class="bg-white/80 rounded-2xl p-3 border border-yumekawa-pink/30 space-y-2">
-                    <h4 class="text-xs font-black text-yumekawa-text font-rounded">📊 あなたの「好み傾向」属性分析</h4>
-                    <div class="w-full max-w-[230px] mx-auto aspect-square">
-                        <canvas id="radarChart"></canvas>
-                    </div>
-                </div>
+  // ステップ進行管理
+  function nextStep() {
+    if (currentQuestion < totalQuestions) {
+      currentQuestion++;
+      document.getElementById('progress').innerText = `第 ${currentQuestion} / ${totalQuestions} 問：好みの顔を選んでね！`;
+      loadNextCandidates();
+    } else {
+      submitDiagnosis();
+    }
+  }
 
-                <div class="text-[10px] text-yumekawa-text/70 font-bold pt-1">
-                    #メン地下めろ顔AI診断  |  制作：大月 とき👑
-                </div>
-            </div>
+  // 最終結果をAPIへ送信
+  async function submitDiagnosis() {
+    document.getElementById('quiz-section').classList.add('hidden');
+    
+    try {
+      const res = await fetch(`${BASE_URL}/diagnose`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ selected_idol_ids: selectedIdolIds })
+      });
 
-            <!-- アクションボタン -->
-            <div class="space-y-2 w-full">
-                <button onclick="shareToX()" class="w-full py-3 bg-black text-white font-bold rounded-xl shadow hover:bg-gray-800 transition flex justify-center items-center gap-2 text-sm">
-                    <svg class="w-4 h-4 fill-current" viewBox="0 0 24 24"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-5.214-6.817L4.99 21.75H1.68l7.73-8.835L1.254 2.25H8.08l4.713 6.231zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg>
-                    X(旧Twitter)でタイプをポストする
-                </button>
+      const result = await res.json();
+      renderResults(result);
+    } catch (e) {
+      console.error("診断処理エラー:", e);
+      alert("診断結果の取得に失敗しました。");
+    }
+  }
 
-                <button onclick="saveImage()" class="w-full py-3 bg-yumekawa-pink text-white font-bold rounded-xl shadow hover:opacity-90 transition text-sm">
-                    📷 画像として保存する（スクショ用）
-                </button>
+  // 画面描画
+  function renderResults(data) {
+    document.getElementById('result-section').classList.remove('hidden');
+    document.getElementById('result-type').innerText = data.result_type;
+    document.getElementById('type-desc').innerText = data.type_description;
+    document.getElementById('toxic-advice').innerText = data.toxic_advice;
 
-                <button onclick="restart()" class="w-full py-2.5 bg-white/80 text-yumekawa-text font-bold rounded-xl border border-yumekawa-pink/50 hover:bg-white transition text-xs">
-                    🔄 もう一度診断する
-                </button>
-            </div>
-        </div>
+    // スコア表示
+    const scoreList = document.getElementById('radar-scores');
+    scoreList.innerHTML = `
+      <li>あざとさ: ${data.radar_scores.azato}%</li>
+      <li>ハンサム: ${data.radar_scores.handsome}%</li>
+      <li>儚さ: ${data.radar_scores.haganse}%</li>
+      <li>ダーク: ${data.radar_scores.dark}%</li>
+      <li>アイドル性: ${data.radar_scores.idol}%</li>
+    `;
 
-    </main>
-
-    <footer class="w-full text-center text-[10px] text-yumekawa-text/60 py-2">
-        &copy; メン地下めろ顔AI診断 | SKYXROS 大月 とき
-    </footer>
-
-    <script>
-        const TOTAL_STEPS = 10;
-        const VECTOR_DIM = 64;
-
-        let currentStep = 1;
-        let userVector = [];
-        let shownIds = [];
-        let currentCandidates = [];
-        let selectedIds = [];
-        let trueNo1Name = "";
-        let currentMeloType = "";
-        let radarChartInstance = null;
-
-        function initUserVector() {
-            userVector = [];
-            for (let i = 0; i < VECTOR_DIM; i++) {
-                userVector.push((Math.random() - 0.5) * 2);
-            }
-        }
-
-        async function startDiagnosis() {
-            initUserVector();
-            currentStep = 1;
-            shownIds = [];
-            selectedIds = [];
-
-            document.getElementById('start-screen').classList.add('hidden');
-            document.getElementById('result-screen').classList.add('hidden');
-            document.getElementById('quiz-screen').classList.remove('hidden');
-
-            await fetchCandidates();
-        }
-
-        async function fetchCandidates() {
-            selectedIds = [];
-            updateProgress();
-
-            try {
-                const res = await fetch('/api/next-candidates', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        step: currentStep,
-                        user_vector: userVector,
-                        shown_ids: shownIds
-                    })
-                });
-
-                if (!res.ok) throw new Error("Failed to fetch candidates");
-                const data = await res.json();
-                currentCandidates = data.candidates;
-
-                currentCandidates.forEach(c => shownIds.push(c.id));
-                renderCandidates();
-            } catch (err) {
-                console.error(err);
-                alert("データの読み込みに失敗しました。");
-            }
-        }
-
-        function renderCandidates() {
-            const grid = document.getElementById('candidates-grid');
-            grid.innerHTML = '';
-
-            currentCandidates.forEach((c) => {
-                const card = document.createElement('div');
-                card.className = `glass-card rounded-2xl p-2 flex flex-col items-center justify-between cursor-pointer transition-all relative overflow-hidden bg-white/90`;
-                card.dataset.id = c.id;
-
-                const cleanUrl = encodeURI(c.image_url.normalize("NFC"));
-
-                card.innerHTML = `
-                    <div class="relative w-full aspect-square rounded-xl overflow-hidden bg-gray-100">
-                        <img src="${cleanUrl}" alt="${c.name}" class="w-full h-full object-cover pointer-events-none" loading="eager" onerror="this.src='https://via.placeholder.com/300?text=No+Image'">
-                        <div class="check-badge hidden absolute top-2 right-2 bg-yumekawa-darkpink text-white rounded-full p-1 shadow-md">
-                            <svg class="w-4 h-4 fill-current" viewBox="0 0 20 20"><path d="M0 11l2-2 5 5L18 3l2 2L7 18z"/></svg>
-                        </div>
-                    </div>
-                    <div class="text-center mt-2 w-full px-1">
-                        <p class="text-[10px] text-yumekawa-text/70 truncate font-bold">${c.group}</p>
-                        <p class="text-xs font-black text-yumekawa-text truncate">${c.name}</p>
-                    </div>
-                `;
-
-                card.onclick = (e) => toggleSelection(card, c.id, e);
-                grid.appendChild(card);
-            });
-        }
-
-        function toggleSelection(card, id, e) {
-            const index = selectedIds.indexOf(id);
-
-            if (index > -1) {
-                selectedIds.splice(index, 1);
-                card.classList.remove('card-selected');
-                card.querySelector('.check-badge').classList.add('hidden');
-            } else {
-                if (selectedIds.length >= 2) {
-                    alert("選択できるのは最大2人までだよ♡");
-                    return;
-                }
-                selectedIds.push(id);
-                card.classList.add('card-selected');
-                card.querySelector('.check-badge').classList.remove('hidden');
-
-                createHeartEffect(e.clientX, e.clientY);
-            }
-        }
-
-        function createHeartEffect(x, y) {
-            const heart = document.createElement('div');
-            heart.className = 'heart-effect';
-            heart.innerText = '💖';
-            heart.style.left = `${x - 15}px`;
-            heart.style.top = `${y - 20}px`;
-            document.body.appendChild(heart);
-
-            setTimeout(() => heart.remove(), 800);
-        }
-
-        async function submitSelection() {
-            if (selectedIds.length === 0) {
-                alert("好きなタイプを1〜2人選んでね♡");
-                return;
-            }
-
-            try {
-                const res = await fetch('/api/update-vector', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({
-                        user_vector: userVector,
-                        selected_ids: selectedIds
-                    })
-                });
-
-                if (!res.ok) throw new Error("Failed to update vector");
-                const data = await res.json();
-                userVector = data.user_vector;
-
-                if (currentStep < TOTAL_STEPS) {
-                    currentStep++;
-                    await fetchCandidates();
-                } else {
-                    await showResult();
-                }
-            } catch (err) {
-                console.error(err);
-                alert("送信に失敗しました。");
-            }
-        }
-
-        function updateProgress() {
-            const pct = (currentStep / TOTAL_STEPS) * 100;
-            document.getElementById('progress-bar').style.width = `${pct}%`;
-            document.getElementById('step-count').innerText = `Q.${currentStep} / ${TOTAL_STEPS}`;
-        }
-
-        async function showResult() {
-            try {
-                const res = await fetch('/api/top9', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ user_vector: userVector })
-                });
-
-                if (!res.ok) throw new Error("Failed to fetch top9");
-                const data = await res.json();
-
-                if (data.true_no1) {
-                    trueNo1Name = `${data.true_no1.group}の${data.true_no1.name}`;
-                }
-
-                currentMeloType = data.melo_type_name;
-                document.getElementById('melo-type-title').innerText = `『${currentMeloType}』`;
-                document.getElementById('melo-comment-text').innerText = data.melo_comment;
-
-                renderTop9(data.top9);
-                renderRadarChart(data.attr_scores);
-
-                document.getElementById('quiz-screen').classList.add('hidden');
-                document.getElementById('result-screen').classList.remove('hidden');
-            } catch (err) {
-                console.error(err);
-                alert("診断結果の計算に失敗しました。");
-            }
-        }
-
-        function renderTop9(top9List) {
-            const grid = document.getElementById('top9-grid');
-            grid.innerHTML = '';
-
-            top9List.forEach((item, index) => {
-                const rank = index + 1;
-                const isProducer = item.is_producer || rank === 1;
-
-                const card = document.createElement('div');
-                card.className = `relative rounded-xl overflow-hidden p-1.5 flex flex-col items-center justify-between text-center ${
-                    isProducer 
-                    ? 'bg-gradient-to-b from-yellow-100 to-yumekawa-pink border-2 border-yellow-400 shadow-md' 
-                    : 'bg-white/90 border border-yumekawa-pink/40'
-                }`;
-
-                const cleanUrl = encodeURI(item.image_url.normalize("NFC"));
-
-                card.innerHTML = `
-                    <div class="absolute top-1 left-1 z-10 bg-yumekawa-darkpink text-white text-[9px] font-black px-1.5 py-0.5 rounded-full shadow">
-                        #0${rank}
-                    </div>
-                    <div class="w-full aspect-square rounded-lg overflow-hidden relative bg-gray-100 mt-3">
-                        <img src="${cleanUrl}" alt="${item.name}" class="w-full h-full object-cover" onerror="this.src='https://via.placeholder.com/150?text=No+Image'">
-                    </div>
-                    <div class="mt-1 w-full">
-                        <p class="text-[8px] text-yumekawa-text/70 truncate font-bold">${item.group}</p>
-                        <p class="text-[10px] font-black text-yumekawa-text truncate">${item.name}</p>
-                        <span class="inline-block bg-yumekawa-lightpink text-yumekawa-darkpink text-[9px] font-extrabold px-1.5 py-0.5 rounded-md mt-0.5">
-                            ${item.match_score}% MATCH
-                        </span>
-                    </div>
-                `;
-
-                grid.appendChild(card);
-            });
-        }
-
-        function renderRadarChart(scores) {
-            const ctx = document.getElementById('radarChart').getContext('2d');
-
-            if (radarChartInstance) {
-                radarChartInstance.destroy();
-            }
-
-            radarChartInstance = new Chart(ctx, {
-                type: 'radar',
-                data: {
-                    labels: ['🐶 子犬・あざと', '👑 王道ハンサム', '🧊 透明感・儚さ', '🖤 ダーク・色気', '✨ アイドル感'],
-                    datasets: [{
-                        data: [scores.cute, scores.handsome, scores.pure, scores.dark, scores.idol],
-                        backgroundColor: 'rgba(255, 105, 180, 0.25)',
-                        borderColor: '#FF69B4',
-                        borderWidth: 2,
-                        pointBackgroundColor: '#FF69B4',
-                        pointRadius: 3
-                    }]
-                },
-                options: {
-                    responsive: true,
-                    maintainAspectRatio: true,
-                    plugins: { legend: { display: false } },
-                    scales: {
-                        r: {
-                            angleLines: { color: 'rgba(255, 183, 197, 0.5)' },
-                            grid: { color: 'rgba(255, 183, 197, 0.5)' },
-                            pointLabels: {
-                                font: { size: 9, family: "'Zen Maru Gothic', sans-serif", weight: 'bold' },
-                                color: '#5A4A57'
-                            },
-                            ticks: { display: false },
-                            min: 40,
-                            max: 100
-                        }
-                    }
-                }
-            });
-        }
-
-        function shareToX() {
-            const text = encodeURIComponent(
-                `『メン地下めろ顔AI診断』をやってみたよ🎀\n` +
-                `私の「めろ顔」タイプは【${currentMeloType}】でした✨\n` +
-                `（分析1位：${trueNo1Name}）\n\n` +
-                `#メン地下めろ顔AI診断 #推し顔診断 #メン地下\n`
-            );
-            const url = encodeURIComponent(window.location.href);
-            window.open(`https://twitter.com/intent/tweet?text=${text}&url=${url}`, '_blank');
-        }
-
-        function saveImage() {
-            const target = document.getElementById('capture-area');
-            html2canvas(target, {
-                scale: 2,
-                useCORS: true,
-                backgroundColor: null
-            }).then(canvas => {
-                const link = document.createElement('a');
-                link.download = 'meloface_result.png';
-                link.href = canvas.toDataURL('image/png');
-                link.click();
-            }).catch(err => {
-                console.error(err);
-                alert("画像の生成に失敗しました。スクショで保存してね！");
-            });
-        }
-
-        function restart() {
-            document.getElementById('result-screen').classList.add('hidden');
-            document.getElementById('start-screen').classList.remove('hidden');
-        }
-    </script>
+    // TOP 9 表示
+    const top9Box = document.getElementById('top9-box');
+    top9Box.innerHTML = '';
+    data.top_9.forEach((idol, index) => {
+      const item = document.createElement('div');
+      item.className = 'top9-item';
+      item.innerHTML = `
+        <span class="badge">#${index + 1}</span> ${idol.match_percent}%
+        <img src="${idol.image_url}" alt="${idol.name}">
+        <p><strong>${idol.name}</strong></p>
+      `;
+      top9Box.appendChild(item);
+    });
+  }
+</script>
 </body>
 </html>
