@@ -84,9 +84,17 @@
       border: 1px solid #ffccd5;
       padding: 16px;
       border-radius: 12px;
-      margin-bottom: 24px;
+      margin-bottom: 20px;
     }
     .result-type h2 { color: #ff4757; font-size: 1.2rem; margin-bottom: 6px; }
+    .advice-box {
+      background: #f8f9fa;
+      border-left: 4px solid #ff4757;
+      padding: 12px;
+      margin-top: 12px;
+      font-size: 0.85rem;
+      color: #555;
+    }
     .top9-grid {
       display: grid;
       grid-template-columns: repeat(3, 1fr);
@@ -128,7 +136,7 @@
   <p class="subtitle">直感で好みの顔を選んでください（全10問）</p>
 
   <div id="quiz-section">
-    <div class="progress" id="progress-text">第 1 / 10 門</div>
+    <div class="progress" id="progress-text">第 1 / 10 問</div>
     <div id="loading" class="loading">画像を読み込み中...</div>
     <div class="card-container" id="card-container" style="display: none;">
       <div class="card" onclick="selectCandidate(0)">
@@ -148,6 +156,10 @@
       <div style="font-size: 0.8rem; color: #888;">あなたの好みのタイプ</div>
       <h2 id="result-title">-</h2>
       <p id="result-desc" style="font-size: 0.85rem; color: #444; line-height: 1.4;"></p>
+      <div class="advice-box">
+        <strong>💡 アドバイス:</strong>
+        <p id="toxic-advice" style="margin-top: 4px;"></p>
+      </div>
     </div>
 
     <h3>MY TOP 9</h3>
@@ -156,52 +168,49 @@
 </div>
 
 <script>
-  // Renderで公開したバックエンドURL
+  // Renderで公開しているバックエンドURL
   const BASE_URL = 'https://menchika-melokao-ai.onrender.com';
 
   let currentStep = 1;
   const maxSteps = 10;
-  let historyData = [];
+  let selectedIdolIds = [];
   let currentCandidates = [];
+  let currentUserVector = null;
 
-  // 初期読み込み
+  // アイドル候補の取得（GET通信）
   async function fetchNextCandidates() {
     document.getElementById('loading').style.display = 'block';
     document.getElementById('card-container').style.display = 'none';
     document.getElementById('skip-btn').style.display = 'none';
 
     try {
-      const res = await fetch(`${BASE_URL}/api/next-candidates`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history: historyData })
-      });
+      const res = await fetch(`${BASE_URL}/api/next-candidates`);
       const data = await res.json();
       currentCandidates = data.candidates;
 
-      document.getElementById('img-0').src = currentCandidates[0].image_url;
-      document.getElementById('name-0').innerText = currentCandidates[0].name || '';
-      document.getElementById('img-1').src = currentCandidates[1].image_url;
-      document.getElementById('name-1').innerText = currentCandidates[1].name || '';
+      if (currentCandidates.length >= 2) {
+        document.getElementById('img-0').src = currentCandidates[0].image_url;
+        document.getElementById('name-0').innerText = currentCandidates[0].name || '';
+        document.getElementById('img-1').src = currentCandidates[1].image_url;
+        document.getElementById('name-1').innerText = currentCandidates[1].name || '';
+      } else if (currentCandidates.length === 1) {
+        document.getElementById('img-0').src = currentCandidates[0].image_url;
+        document.getElementById('name-0').innerText = currentCandidates[0].name || '';
+      }
 
       document.getElementById('loading').style.display = 'none';
       document.getElementById('card-container').style.display = 'flex';
       document.getElementById('skip-btn').style.display = 'block';
     } catch (err) {
-      alert('通信エラーが発生しました。時間を置いて再度お試しください。');
+      alert('通信エラーが発生しました。サーバーの状態を確認してください。');
       console.error(err);
     }
   }
 
-  // 選択またはスキップ処理
+  // 選択処理（またはスキップ）
   async function selectCandidate(selectedIndex) {
-    if (selectedIndex !== null) {
-      const chosen = currentCandidates[selectedIndex];
-      const rejected = currentCandidates[1 - selectedIndex];
-      historyData.push({
-        chosen_id: chosen.id,
-        rejected_id: rejected.id
-      });
+    if (selectedIndex !== null && currentCandidates[selectedIndex]) {
+      selectedIdolIds.push(currentCandidates[selectedIndex].id);
     }
 
     if (currentStep < maxSteps) {
@@ -213,7 +222,7 @@
     }
   }
 
-  // 最終結果の取得・描画
+  // 診断結果の算出（main.pyの仕様に合わせたPOST通信）
   async function showResult() {
     document.getElementById('quiz-section').style.display = 'none';
     document.getElementById('result-section').style.display = 'block';
@@ -222,12 +231,17 @@
       const res = await fetch(`${BASE_URL}/diagnose`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ history: historyData })
+        body: JSON.stringify({
+          user_vector: currentUserVector,
+          selected_idol_ids: selectedIdolIds
+        })
       });
       const data = await res.json();
 
-      document.getElementById('result-title').innerText = data.user_type || 'タイプ判定完了';
-      document.getElementById('result-desc').innerText = data.description || '';
+      // main.py のキー名（result_type, type_description, toxic_advice）を表示
+      document.getElementById('result-title').innerText = data.result_type || 'タイプ判定完了';
+      document.getElementById('result-desc').innerText = data.type_description || '';
+      document.getElementById('toxic-advice').innerText = data.toxic_advice || '';
 
       const top9Grid = document.getElementById('top9-grid');
       top9Grid.innerHTML = '';
@@ -239,7 +253,7 @@
           card.innerHTML = `
             <div class="rank-badge ${idx === 0 ? 'rank-1' : ''}">${idx + 1}位</div>
             <img src="${item.image_url}" alt="${item.name}">
-            <div class="top9-name">${item.name}</div>
+            <div class="top9-name">${item.name} (${item.match_percent}%)</div>
           `;
           top9Grid.appendChild(card);
         });
@@ -250,7 +264,7 @@
     }
   }
 
-  // ページ読み込み時にスタート
+  // 初期化実行
   fetchNextCandidates();
 </script>
 
