@@ -19,45 +19,50 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# 定数設定
 IMAGE_DIR = "images"
 FIXED_PRODUCER_GROUP = "SKYXROS"
 FIXED_PRODUCER_NAME = "大月 とき"
 FIXED_PRODUCER_PATH = f"images/{FIXED_PRODUCER_GROUP}/{FIXED_PRODUCER_NAME}.jpg"
-VECTOR_DIM = 64  # 特徴量ベクトルの次元数
-LEARNING_RATE = 0.35  # ベクトル更新時の学習率
+VECTOR_DIM = 64
+LEARNING_RATE = 0.35
 
-# 静的ファイルの配信（画像・フロントエンド）
 if os.path.exists(IMAGE_DIR):
     app.mount("/images", StaticFiles(directory=IMAGE_DIR), name="images")
 
-# Pydantic モデル
 class NextCandidatesRequest(BaseModel):
-    step: int  # 1 ~ 10
+    step: int
     user_vector: Optional[List[float]] = None
     shown_ids: Optional[List[str]] = []
 
 class UpdateVectorRequest(BaseModel):
     user_vector: List[float]
-    selected_ids: List[str]  # 1人または2人のID
+    selected_ids: List[str]
 
 class Top9Request(BaseModel):
     user_vector: List[float]
 
-# モック特徴量データベース管理クラス
+# 属性軸の基準ベクトル定義
+np.random.seed(100)
+ATTR_VECTORS = {
+    "cute": np.random.randn(VECTOR_DIM),       # 子犬・あざと度
+    "handsome": np.random.randn(VECTOR_DIM),   # 王道ハンサム度
+    "pure": np.random.randn(VECTOR_DIM),       # 透明感・儚さ
+    "dark": np.random.randn(VECTOR_DIM),       # ダーク・色気度
+    "idol": np.random.randn(VECTOR_DIM)        # 派手・アイドル度
+}
+for k in ATTR_VECTORS:
+    ATTR_VECTORS[k] = ATTR_VECTORS[k] / np.linalg.norm(ATTR_VECTORS[k])
+
 class ItemDatabase:
     def __init__(self):
         self.items = []
         self._load_items()
 
     def _load_items(self):
-        """画像ディレクトリからアイテムをロードし、固定の特徴量ベクトルを生成/割り当て"""
-        np.random.seed(42)  # 再現性のためのシード固定
+        np.random.seed(42)
         image_paths = glob.glob(os.path.join(IMAGE_DIR, "*", "*.jpg"))
         
-        # ディレクトリ構造がない場合のフォールバック用ダミー生成
         if not image_paths:
-            print("Warning: No images found in 'images/'. Using fallback mock items.")
             image_paths = [
                 f"images/SKYXROS/{FIXED_PRODUCER_NAME}.jpg",
                 "images/GroupA/Member1.jpg",
@@ -67,7 +72,6 @@ class ItemDatabase:
             ]
 
         for path in image_paths:
-            # Linux環境（Render）対策：日本語文字列をNFC正規化
             norm_path = unicodedata.normalize('NFC', path.replace('\\', '/'))
             parts = norm_path.split('/')
             
@@ -79,9 +83,6 @@ class ItemDatabase:
                 name = os.path.splitext(parts[-1])[0]
 
             item_id = f"{group}__{name}"
-            
-            # ランダムだが一貫性のある特徴量ベクトル（正規化済み）
-            # プロデューサー（大月とき）かそれ以外で均等配置
             vec = np.random.randn(VECTOR_DIM)
             vec = vec / np.linalg.norm(vec)
 
@@ -104,7 +105,6 @@ class ItemDatabase:
 
 db = ItemDatabase()
 
-# ユーティリティ関数
 def cosine_similarity(v1: np.ndarray, v2: np.ndarray) -> float:
     norm1 = np.linalg.norm(v1)
     norm2 = np.linalg.norm(v2)
@@ -114,55 +114,35 @@ def cosine_similarity(v1: np.ndarray, v2: np.ndarray) -> float:
 
 @app.post("/api/next-candidates")
 def get_next_candidates(req: NextCandidatesRequest):
-    """4人の候補を抽出（1〜3問目は多様性重視、4問目以降はベクトル近傍から選出）"""
     all_items = db.get_all()
     if len(all_items) < 4:
-        raise HTTPException(status_code=500, detail="Not enough images in database (At least 4 required).")
+        raise HTTPException(status_code=500, detail="Not enough images in database.")
 
     shown_set = set(req.shown_ids or [])
     available = [item for item in all_items if item["id"] not in shown_set]
-    
-    # リセットまたは全消費時のフォールバック
     if len(available) < 4:
         available = all_items
 
-    selected = []
-
     if req.step <= 3 or req.user_vector is None:
-        # 【探索フェーズ】属性の偏りを防ぐため、空間的に離れた4人、または完全にランダム選出
         indices = np.random.choice(len(available), size=4, replace=False)
         selected = [available[i] for i in indices]
     else:
-        # 【最適化フェーズ】ユーザーベクトルの周辺から類似度が高め〜中程度の多様な4人を選出
         u_vec = np.array(req.user_vector)
-        scored = []
-        for item in available:
-            sim = cosine_similarity(u_vec, item["vector"])
-            scored.append((sim, item))
-        
-        # 類似度順にソート
+        scored = [(cosine_similarity(u_vec, item["vector"]), item) for item in available]
         scored.sort(key=lambda x: x[0], reverse=True)
-        
-        # 上位帯・中位帯から適度にばらけさせて4人選出（局所解へのハマりを防止）
         top_pool = scored[:max(8, len(scored) // 2)]
         chosen_indices = np.random.choice(len(top_pool), size=4, replace=False)
         selected = [top_pool[i][1] for i in chosen_indices]
 
-    # クライアント用レスポンス整形
-    candidates = []
-    for item in selected:
-        candidates.append({
-            "id": item["id"],
-            "group": item["group"],
-            "name": item["name"],
-            "image_url": item["image_url"]
-        })
-
-    return {"candidates": candidates}
+    return {
+        "candidates": [
+            {"id": item["id"], "group": item["group"], "name": item["name"], "image_url": item["image_url"]}
+            for item in selected
+        ]
+    }
 
 @app.post("/api/update-vector")
 def update_vector(req: UpdateVectorRequest):
-    """選択された1人または2人の重心方向へユーザーベクトルを引き寄せる"""
     if not req.selected_ids or len(req.selected_ids) > 2:
         raise HTTPException(status_code=400, detail="Must select 1 or 2 items.")
 
@@ -170,21 +150,13 @@ def update_vector(req: UpdateVectorRequest):
     if np.linalg.norm(u_vec) == 0:
         u_vec = np.random.randn(VECTOR_DIM)
 
-    # 選択されたアイテムのベクトルを取得
-    selected_vecs = []
-    for s_id in req.selected_ids:
-        item = db.get_by_id(s_id)
-        if item:
-            selected_vecs.append(item["vector"])
-
+    selected_vecs = [db.get_by_id(s_id)["vector"] for s_id in req.selected_ids if db.get_by_id(s_id)]
     if not selected_vecs:
         raise HTTPException(status_code=404, detail="Selected items not found.")
 
-    # 2人選ばれた場合は重心（平均）ベクトルを求める
     target_vec = np.mean(selected_vecs, axis=0)
     target_vec = target_vec / np.linalg.norm(target_vec)
 
-    # ユーザーベクトルを選択方向へ引き寄せる（指数移動平均）
     new_u_vec = (1 - LEARNING_RATE) * u_vec + LEARNING_RATE * target_vec
     new_u_vec = new_u_vec / np.linalg.norm(new_u_vec)
 
@@ -192,56 +164,99 @@ def update_vector(req: UpdateVectorRequest):
 
 @app.post("/api/top9")
 def get_top9(req: Top9Request):
-    """TOP 9 マッチメンバーを判定（1位は大月とき固定）"""
     all_items = db.get_all()
     u_vec = np.array(req.user_vector, dtype=float)
 
-    # 全メンバーとのコサイン類似度計算
+    # TOP 9 計算
     scored_items = []
     for item in all_items:
         sim = cosine_similarity(u_vec, item["vector"])
-        # マッチ度%に変換 (0.5~1.0 を 50%~99% にスケーリング)
         match_score = int(np.clip((sim + 1) / 2 * 100, 50, 99))
         scored_items.append({
-            "id": item["id"],
-            "group": item["group"],
-            "name": item["name"],
-            "image_url": item["image_url"],
-            "match_score": match_score
+            "id": item["id"], "group": item["group"], "name": item["name"],
+            "image_url": item["image_url"], "match_score": match_score
         })
 
-    # マッチ度順にソート
     scored_items.sort(key=lambda x: x["match_score"], reverse=True)
-
-    # 数値上の真の1位（シェアテキスト生成用）
     true_no1 = scored_items[0] if scored_items else None
 
-    # 固定プロデューサー情報（#01 固定用）
     producer_item = {
         "id": f"{FIXED_PRODUCER_GROUP}__{FIXED_PRODUCER_NAME}",
-        "group": FIXED_PRODUCER_GROUP,
-        "name": FIXED_PRODUCER_NAME,
-        "image_url": f"/{FIXED_PRODUCER_PATH}",
-        "match_score": 100,
-        "is_producer": True
+        "group": FIXED_PRODUCER_GROUP, "name": FIXED_PRODUCER_NAME,
+        "image_url": f"/{FIXED_PRODUCER_PATH}", "match_score": 100, "is_producer": True
     }
 
-    # 大月ときを除外したリストから上位8名を取得
     other_items = [
         item for item in scored_items 
         if not (item["group"] == FIXED_PRODUCER_GROUP and item["name"] == FIXED_PRODUCER_NAME)
     ]
-    top_8_others = other_items[:8]
+    final_top9 = [producer_item] + other_items[:8]
 
-    # #01(大月とき) + #02〜#09
-    final_top9 = [producer_item] + top_8_others
+    # 属性分析
+    attr_scores = {}
+    for attr_name, attr_vec in ATTR_VECTORS.items():
+        sim = cosine_similarity(u_vec, attr_vec)
+        score = int(np.clip((sim + 1) / 2 * 100, 50, 98))
+        attr_scores[attr_name] = score
+
+    sorted_attrs = sorted(attr_scores.items(), key=lambda x: x[1], reverse=True)
+    top1_attr, top1_score = sorted_attrs[0]
+    top2_attr, top2_score = sorted_attrs[1]
+
+    # 12タイプ判定と毒舌テキスト分岐
+    if top1_score > 82 and (top1_score - top2_score) > 8:
+        if top1_attr == "cute":
+            melo_type_name = "あざと甘々子犬めろ顔"
+            melo_comment = "あざとくて可愛い顔に上目遣いされたら何でも許すでしょ？ わかりやすくてチョロい。どうせ「僕のこと好き？」って甘い声で言われたら一発で落ちるタイプ。"
+        elif top1_attr == "handsome":
+            melo_type_name = "正統派スタイリッシュイケメンめろ顔"
+            melo_comment = "結局ミーハーだから分かりやすい王道イケメンが好きなんだよね。クラスで一番モテる奴に振り回されて勝手に自滅するタイプだから、少しは警戒心持ちな。"
+        elif top1_attr == "pure":
+            melo_type_name = "消えちゃいそうな透明感儚げめろ顔"
+            melo_comment = "「俺、いつかいなくなっちゃうかも…」みたいな薄幸そうな男に弱いよね？ 影のある男を「私が救ってあげなきゃ」って勘違いして、沼にハマる典型的なタイプ。"
+        elif top1_attr == "dark":
+            melo_type_name = "危険な香りのダーク色気めろ顔"
+            melo_comment = "クズだって分かってるのに、ちょっと冷たくされた後に優しくされるとコロッといくだろ？ 危険な匂いのする男に人生狂わされるのが一番好きなタイプ。"
+        else: # idol
+            melo_type_name = "オーラ全開キラキラアイドルめろ顔"
+            melo_comment = "ステージの上で一番輝いてる男の「特別なファン」になりたくて必死でしょ？ 営業トークだと分かってても「君だけだよ」に全財産注ぎ込むタイプ。"
+
+    elif top1_score > 70 and top2_score > 65:
+        pair = set([top1_attr, top2_attr])
+        if pair == {"cute", "dark"}:
+            melo_type_name = "ギャップで落とす小悪魔系沼めろ顔"
+            melo_comment = "普段甘えてくるのにたまにドSな一面見せられたら狂うでしょ？ 自分の前でしか見せない裏の顔に優越感感じて、一生抜け出せなくなる一番危険なオタク。"
+        elif pair == {"handsome", "pure"}:
+            melo_type_name = "王子様オーラの国宝級美形めろ顔"
+            melo_comment = "面食いの極み。顔面偏差値が高ければ高いほど良いと思ってない？ 遠くから眺めて神様扱いして、一言会話しただけで呼吸忘れてパニックになるタイプ。"
+        elif pair == {"cute", "idol"}:
+            melo_type_name = "天性の愛されあざとアイドルめろ顔"
+            melo_comment = "プロ意識の高いファンサと甘え上手なレスに狂わされてるね。他担狩りされて「私だけを見てくれてる」って頭お花畑になって財布の紐ゆるゆるになるタイプ。"
+        elif pair == {"dark", "pure"}:
+            melo_type_name = "ミステリアスな病み系儚げめろ顔"
+            melo_comment = "闇を抱えてそうな男のメンヘラ部分に付き合ってあげるのが好きでしょ？ 共依存に陥って「私がいないとこの人ダメになっちゃう」って自爆するタイプ。"
+        elif pair == {"handsome", "dark"}:
+            melo_type_name = "フェロモン溢れる大人の色気ハンサムめろ顔"
+            melo_comment = "男の余裕と色気に弱すぎる。ちょっと低音ボイスで耳元で囁かれたり、強引に引き寄せられたりしたら即オチするでしょ。本能に素直になりすぎ。"
+        else:
+            melo_type_name = "罪深きハイブリッドめろ顔"
+            melo_comment = "欲張りすぎでしょ。いろんなタイプのイケメンに目移りして、結局全員の沼に片足突っ込んで身動き取れなくなってるタイプ。"
+
+    elif all(score > 68 for score in attr_scores.values()):
+        melo_type_name = "全方位無敵の神バランスめろ顔"
+        melo_comment = "何でも持ってる完璧な男が好きとか、理想高すぎて現実見えてる？ 全部の要素が高水準じゃないと満足できない、一番ワガママで強欲なタイプ。"
+    else:
+        melo_type_name = "何にも染まらない未知のミステリアスめろ顔"
+        melo_comment = "自分の好みすらよく分かってないでしょ？ ちょっとミステリアスで読めない男に振り回されて「なんで気になっちゃうんだろう」って一人で勝手に沼るタイプ。"
 
     return {
         "top9": final_top9,
-        "true_no1": true_no1
+        "true_no1": true_no1,
+        "attr_scores": attr_scores,
+        "melo_type_name": melo_type_name,
+        "melo_comment": melo_comment
     }
 
-# ルートアクセス時のフロントエンド配信
 @app.get("/")
 def read_root():
     if os.path.exists("index.html"):
